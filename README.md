@@ -100,8 +100,8 @@ client = AsyncProductionHTTPClient(
 client = AsyncProductionHTTPClient(
     base_url="https://api.example.com",
     default_headers={
-        "User-Agent": "MyApp/1.0",
-        "X-Custom-Header": "value"
+        "Authorization": "Bearer your-token-here",
+        "User-Agent": "MyApp/1.0"
     }
 )
 ```
