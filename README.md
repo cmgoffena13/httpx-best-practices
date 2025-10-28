@@ -23,7 +23,6 @@ from client import AsyncProductionHTTPClient
 # Using context manager (recommended)
 async with AsyncProductionHTTPClient(
     base_url="https://api.example.com",
-    request_timeout=10.0,
     max_attempts=5
 ) as client:
     response = await client.get("/users/1")
@@ -52,9 +51,13 @@ with ProductionHTTPClient(base_url="https://api.example.com") as client:
 ### Parameters
 
 - `base_url` (Optional[str]): Base URL for requests (uses relative paths)
-- `request_timeout` (float): Total request timeout in seconds (default: 10.0)
-  - Connection timeout: min(timeout/2, 5.0) seconds
-  - Read timeout: request_timeout seconds
+- `connect_timeout` (float): Connection establishment timeout (default: 5.0)
+- `read_timeout` (float): Read timeout for response data (default: 10.0)
+- `write_timeout` (float): Write timeout for request data (default: 5.0)
+- `pool_timeout` (float): Connection pool timeout (default: 2.0)
+- `max_connections` (int): Maximum total connections in pool (default: 50)
+- `max_keepalive_connections` (int): Maximum keepalive connections (default: 20)
+- `keepalive_expiry` (float): Keepalive connection expiry time in seconds (default: 30.0)
 - `max_attempts` (int): Maximum total attempts including initial request (default: 5)
 - `default_headers` (Optional[dict]): Headers to include on all requests
 
@@ -93,6 +96,36 @@ client = AsyncProductionHTTPClient(
 
 ## Advanced Usage
 
+### Custom Timeouts
+
+Fine-tune timeout behavior for different scenarios:
+
+```python
+# For slow APIs with long response times
+client = AsyncProductionHTTPClient(
+    base_url="https://api.example.com",
+    connect_timeout=5.0,        # Quick connection timeout
+    read_timeout=25.0,          # Allow longer for reading response
+    write_timeout=10.0,         # Reasonable write timeout
+)
+
+# For high-traffic APIs with connection pool issues
+client = AsyncProductionHTTPClient(
+    base_url="https://api.example.com",
+    pool_timeout=2.0,           # Wait max 2s for available connection
+    max_connections=100,         # Allow more total connections
+    max_keepalive_connections=50, # Keep more connections alive
+)
+
+# For memory-constrained environments
+client = AsyncProductionHTTPClient(
+    base_url="https://api.example.com",
+    max_connections=10,          # Limit total connections
+    max_keepalive_connections=5, # Fewer keepalive connections
+    keepalive_expiry=10.0,      # Shorter keepalive time
+)
+```
+
 ### Custom Headers
 
 ```python
@@ -114,7 +147,6 @@ class MyApiClient:
     def __init__(self):
         self.client = AsyncProductionHTTPClient(
             base_url="https://api.example.com",
-            request_timeout=10.0,
             max_attempts=5
         )
         self._closed = False
@@ -272,11 +304,17 @@ response = await client.get("/rate-limited-endpoint")
 
 ## Connection Pool Tuning
 
-The default pool limits (20 keepalive, 50 max connections) work well for most use cases. Adjust if you have:
+The default pool limits work well for most use cases, but can be customized:
 
-- **High concurrency**: Increase `max_connections`
+- **max_connections=50**: Total connections in the pool
+- **max_keepalive_connections=20**: Connections kept alive for reuse
+- **keepalive_expiry=30.0**: How long to keep connections alive
+
+**Adjust based on your needs:**
+- **High concurrency**: Increase `max_connections` and `max_keepalive_connections`
 - **Long-lived processes**: Increase `keepalive_expiry`
-- **Memory constraints**: Decrease `max_keepalive_connections`
+- **Memory constraints**: Decrease `max_connections` and `max_keepalive_connections`
+- **High-traffic APIs**: Increase pool limits and decrease `keepalive_expiry`
 
 ## Requirements
 

@@ -35,7 +35,6 @@ async def async_examples():
         def __init__(self):
             self.client = AsyncProductionHTTPClient(
                 base_url="https://jsonplaceholder.typicode.com",
-                request_timeout=10.0,
                 max_attempts=4,
             )
             self._closed = False
@@ -94,7 +93,6 @@ def sync_examples():
         def __init__(self):
             self.client = ProductionHTTPClient(
                 base_url="https://jsonplaceholder.typicode.com",
-                request_timeout=10.0,
                 max_attempts=4,
             )
             self._closed = False

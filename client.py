@@ -80,21 +80,30 @@ def _calculate_backoff_for_response(status_code: int, headers, attempt: int) -> 
 
     return _calculate_backoff(attempt)
 
+
 class ProductionHTTPClient:
     def __init__(
         self,
         base_url: Optional[str] = None,
-        request_timeout: float = 10.0,
+        connect_timeout: float = 5.0,
+        read_timeout: float = 10.0,
+        write_timeout: float = 5.0,
+        pool_timeout: float = 2.0,
+        max_connections: int = 50,
+        max_keepalive_connections: int = 20,
+        keepalive_expiry: float = 30.0,
         max_attempts: int = 5,  # Total number of attempts (initial + retries)
         default_headers: Optional[dict] = None,
     ):
         self.base_url = base_url
-        self.request_timeout = request_timeout
         self.max_attempts = max_attempts
 
-        # Configure timeout: 5s to connect, request_timeout for read/write
+        # Configure timeout with individual timeout controls
         httpx_timeout = httpx.Timeout(
-            request_timeout, connect=min(request_timeout / 2, 5.0)
+            connect=connect_timeout,  # Max seconds to wait while establishing the TCP connection
+            read=read_timeout,  # Max seconds to wait to receive data (response body reading)
+            write=write_timeout,  # Max seconds to wait to send data (request body sending)
+            pool=pool_timeout,  # Max seconds to wait when trying to acquire a connection from the pool
         )
 
         self.client = httpx.Client(
@@ -102,9 +111,9 @@ class ProductionHTTPClient:
             timeout=httpx_timeout,
             headers=default_headers,
             limits=httpx.Limits(
-                max_keepalive_connections=20,
-                max_connections=50,
-                keepalive_expiry=30.0,
+                max_keepalive_connections=max_keepalive_connections,
+                max_connections=max_connections,
+                keepalive_expiry=keepalive_expiry,
             ),
             http2=True,
         )
@@ -185,17 +194,25 @@ class AsyncProductionHTTPClient:
     def __init__(
         self,
         base_url: Optional[str] = None,
-        request_timeout: float = 10.0,
+        connect_timeout: float = 5.0,
+        read_timeout: float = 10.0,
+        write_timeout: float = 5.0,
+        pool_timeout: float = 2.0,
+        max_connections: int = 50,
+        max_keepalive_connections: int = 20,
+        keepalive_expiry: float = 30.0,
         max_attempts: int = 5,  # Total number of attempts (initial + retries)
         default_headers: Optional[dict] = None,
     ):
         self.base_url = base_url
-        self.request_timeout = request_timeout
         self.max_attempts = max_attempts
 
-        # Configure timeout: 5s to connect, request_timeout for read/write
+        # Configure timeout with individual timeout controls
         httpx_timeout = httpx.Timeout(
-            request_timeout, connect=min(request_timeout / 2, 5.0)
+            connect=connect_timeout,  # Max seconds to wait while establishing the TCP connection
+            read=read_timeout,  # Max seconds to wait to receive data (response body reading)
+            write=write_timeout,  # Max seconds to wait to send data (request body sending)
+            pool=pool_timeout,  # Max seconds to wait when trying to acquire a connection from the pool
         )
 
         self.client = httpx.AsyncClient(
