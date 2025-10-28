@@ -226,21 +226,7 @@ class AsyncProductionHTTPClient:
     async def request_with_retry(
         self, method: str, url: str, **kwargs
     ) -> httpx.Response:
-        """
-        Make an HTTP request with automatic retry for transient errors.
-
-        Args:
-            method: HTTP method (GET, POST, etc.)
-            url: URL to request
-            **kwargs: Additional httpx request arguments
-
-        Returns:
-            httpx.Response
-
-        Raises:
-            httpx.HTTPStatusError: For non-retriable client errors (4xx except 429)
-            httpx.RequestError: For network errors that exceed retry limit
-        """
+        """Make an HTTP request with automatic retry for transient errors."""
         last_exception = None
 
         for attempt in range(self.max_attempts):
