@@ -24,7 +24,7 @@ from client import AsyncProductionHTTPClient
 async with AsyncProductionHTTPClient(
     base_url="https://api.example.com",
     request_timeout=10.0,
-    max_retries=4
+    max_attempts=5
 ) as client:
     response = await client.get("/users/1")
     data = response.json()
@@ -55,7 +55,7 @@ with SyncProductionHTTPClient(base_url="https://api.example.com") as client:
 - `request_timeout` (float): Total request timeout in seconds (default: 10.0)
   - Connection timeout: min(timeout/2, 5.0) seconds
   - Read timeout: request_timeout seconds
-- `max_retries` (int): Maximum retry attempts (default: 4)
+- `max_attempts` (int): Maximum total attempts including initial request (default: 5)
 - `default_headers` (Optional[dict]): Headers to include on all requests
 
 ### Retry Behavior
@@ -78,7 +78,7 @@ with SyncProductionHTTPClient(base_url="https://api.example.com") as client:
 
 Exponential backoff with jitter: `random(0.8, 1.0) * 2^attempt` seconds
 
-With `max_retries=4` (default):
+With `max_attempts=5` (default):
 - Retry 1: 0.8-1.0 seconds (after initial failure)
 - Retry 2: 1.6-2.0 seconds
 - Retry 3: 3.2-4.0 seconds
@@ -87,8 +87,7 @@ With `max_retries=4` (default):
 Example:
 ```python
 client = AsyncProductionHTTPClient(
-    max_retries=4  # Will retry up to 4 times
-    # Total possible attempts: 5 (initial + 4 retries)
+    max_attempts=5  # Will try up to 5 times total
 )
 ```
 
@@ -116,7 +115,7 @@ class MyApiClient:
         self.client = AsyncProductionHTTPClient(
             base_url="https://api.example.com",
             request_timeout=10.0,
-            max_retries=4
+            max_attempts=5
         )
         self._closed = False
     

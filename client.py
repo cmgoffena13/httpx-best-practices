@@ -76,12 +76,12 @@ class SyncProductionHTTPClient:
         self,
         base_url: Optional[str] = None,
         request_timeout: float = 10.0,
-        max_retries: int = 4,  # 4 retries = 5 attempts
+        max_attempts: int = 5,  # Total number of attempts (initial + retries)
         default_headers: Optional[dict] = None,
     ):
         self.base_url = base_url
         self.request_timeout = request_timeout
-        self.max_retries = max_retries
+        self.max_attempts = max_attempts
 
         # Configure timeout: 5s to connect, request_timeout for read/write
         httpx_timeout = httpx.Timeout(
@@ -116,18 +116,18 @@ class SyncProductionHTTPClient:
         """Make an HTTP request with automatic retry for transient errors."""
         last_exception = None
 
-        for attempt in range(self.max_retries + 1):
+        for attempt in range(self.max_attempts):
             try:
                 response = self.client.request(method, url, **kwargs)
 
                 if response.status_code in RETRIABLE_STATUS_CODES:
-                    if attempt < self.max_retries:
+                    if attempt < self.max_attempts - 1:
                         error_desc = RETRIABLE_STATUS_CODES[response.status_code]
                         backoff = _calculate_backoff_for_response(
                             response.status_code, response.headers, attempt
                         )
                         logger.warning(
-                            f"{error_desc} on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_retries})"
+                            f"{error_desc} on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
                         )
                         time.sleep(backoff)
                         continue
@@ -141,10 +141,10 @@ class SyncProductionHTTPClient:
 
             except httpx.TimeoutException as e:
                 last_exception = e
-                if attempt < self.max_retries:
+                if attempt < self.max_attempts - 1:
                     backoff = _calculate_backoff(attempt)
                     logger.warning(
-                        f"Timeout on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_retries})"
+                        f"Timeout on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
                     )
                     time.sleep(backoff)
                 else:
@@ -152,10 +152,10 @@ class SyncProductionHTTPClient:
 
             except httpx.NetworkError as e:
                 last_exception = e
-                if attempt < self.max_retries:
+                if attempt < self.max_attempts - 1:
                     backoff = _calculate_backoff(attempt)
                     logger.warning(
-                        f"Network error on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_retries})"
+                        f"Network error on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
                     )
                     time.sleep(backoff)
                 else:
@@ -187,12 +187,12 @@ class AsyncProductionHTTPClient:
         self,
         base_url: Optional[str] = None,
         request_timeout: float = 10.0,
-        max_retries: int = 4,  # 4 retries = 5 attempts
+        max_attempts: int = 5,  # Total number of attempts (initial + retries)
         default_headers: Optional[dict] = None,
     ):
         self.base_url = base_url
         self.request_timeout = request_timeout
-        self.max_retries = max_retries
+        self.max_attempts = max_attempts
 
         # Configure timeout: 5s to connect, request_timeout for read/write
         httpx_timeout = httpx.Timeout(
@@ -243,18 +243,18 @@ class AsyncProductionHTTPClient:
         """
         last_exception = None
 
-        for attempt in range(self.max_retries + 1):
+        for attempt in range(self.max_attempts):
             try:
                 response = await self.client.request(method, url, **kwargs)
 
                 if response.status_code in RETRIABLE_STATUS_CODES:
-                    if attempt < self.max_retries:
+                    if attempt < self.max_attempts - 1:
                         error_desc = RETRIABLE_STATUS_CODES[response.status_code]
                         backoff = _calculate_backoff_for_response(
                             response.status_code, response.headers, attempt
                         )
                         logger.warning(
-                            f"{error_desc} on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_retries})"
+                            f"{error_desc} on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
                         )
                         await asyncio.sleep(backoff)
                         continue
@@ -268,10 +268,10 @@ class AsyncProductionHTTPClient:
 
             except httpx.TimeoutException as e:
                 last_exception = e
-                if attempt < self.max_retries:
+                if attempt < self.max_attempts - 1:
                     backoff = _calculate_backoff(attempt)
                     logger.warning(
-                        f"Timeout on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_retries})"
+                        f"Timeout on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
                     )
                     await asyncio.sleep(backoff)
                 else:
@@ -279,10 +279,10 @@ class AsyncProductionHTTPClient:
 
             except httpx.NetworkError as e:
                 last_exception = e
-                if attempt < self.max_retries:
+                if attempt < self.max_attempts - 1:
                     backoff = _calculate_backoff(attempt)
                     logger.warning(
-                        f"Network error on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_retries})"
+                        f"Network error on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
                     )
                     await asyncio.sleep(backoff)
                 else:

@@ -36,7 +36,7 @@ async def async_examples():
             self.client = AsyncProductionHTTPClient(
                 base_url="https://jsonplaceholder.typicode.com",
                 request_timeout=10.0,
-                max_retries=3,
+                max_attempts=4,
             )
             self._closed = False
             logger.info("MyApiClient initialized")
@@ -95,7 +95,7 @@ def sync_examples():
             self.client = SyncProductionHTTPClient(
                 base_url="https://jsonplaceholder.typicode.com",
                 request_timeout=10.0,
-                max_retries=3,
+                max_attempts=4,
             )
             self._closed = False
             logger.info("MySyncApiClient initialized")
