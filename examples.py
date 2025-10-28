@@ -124,6 +124,6 @@ def sync_examples():
         api_client.close()
 
 
-if __name__ == "__main__":
-    asyncio.run(async_examples())
-    sync_examples()
+
+asyncio.run(async_examples())
+sync_examples()

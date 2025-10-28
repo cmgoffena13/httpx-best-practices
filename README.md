@@ -110,17 +110,31 @@ client = AsyncProductionHTTPClient(
 
 ```python
 class MyApiClient:
+    """Example async API client with lifecycle management."""
+    
     def __init__(self):
         self.client = AsyncProductionHTTPClient(
-            base_url="https://api.example.com"
+            base_url="https://api.example.com",
+            request_timeout=10.0,
+            max_retries=4
         )
+        self._closed = False
     
     async def fetch_user(self, user_id: int):
+        """Fetch user data from the API."""
         response = await self.client.get(f"/users/{user_id}")
         return response.json()
     
     async def close(self):
-        await self.client.close()
+        """Clean up the HTTP client."""
+        if self.client and not self._closed:
+            await self.client.close()
+            self._closed = True
+    
+    def __del__(self):
+        """Warn if client wasn't properly closed."""
+        if hasattr(self, '_closed') and not self._closed:
+            print("Warning: MyApiClient destroyed without calling close()! Resource leak possible.")
 
 # Usage
 client = MyApiClient()
@@ -235,7 +249,3 @@ The default pool limits (20 keepalive, 50 max connections) work well for most us
 - Python >= 3.12
 - httpx >= 0.28.1
 - pendulum >= 3.0.0 (for Retry-After date parsing)
-
-## License
-
-MIT
