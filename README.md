@@ -271,5 +271,5 @@ The default pool limits (20 keepalive, 50 max connections) work well for most us
 ## Requirements
 
 - Python >= 3.12
-- httpx >= 0.28.1
+- httpx[http2] >= 0.28.1
 - pendulum >= 3.0.0 (for Retry-After date parsing)
