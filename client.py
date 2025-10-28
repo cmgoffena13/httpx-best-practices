@@ -5,7 +5,7 @@ This module provides production-ready HTTP clients with:
 - Connection pooling via client reuse
 - Exponential backoff with jitter for retries
 - Retry logic for transient errors (5xx, 429, network errors)
-- Retry-After header support for rate limiting
+- Retry-After header support for rate limiting (429) and service unavailable (503)
 - Configurable timeouts and retry limits
 - Comprehensive error handling and logging
 - Both sync (SyncProductionHTTPClient) and async (AsyncProductionHTTPClient) variants
@@ -20,7 +20,6 @@ from typing import Optional
 import httpx
 import pendulum
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 RETRIABLE_STATUS_CODES = {
@@ -63,7 +62,8 @@ def _calculate_backoff(attempt: int) -> float:
 
 def _calculate_backoff_for_response(status_code: int, headers, attempt: int) -> float:
     """Calculate backoff delay for a response with retry logic."""
-    if status_code == 429:
+    # Respect Retry-After header for 429 (rate limiting) and 503 (service unavailable)
+    if status_code in (429, 503):
         retry_after = _parse_retry_after(headers.get("Retry-After"))
         if retry_after is not None:
             return retry_after

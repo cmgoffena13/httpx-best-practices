@@ -201,12 +201,12 @@ Client 3: retries at 0.88s, 1.6s, 3.3s
 
 ### Retry-After Support
 
-For `429` responses, respects the server's `Retry-After` header:
+For `429` (rate limiting) and `503` (service unavailable) responses, respects the server's `Retry-After` header:
 
 ```python
-# Server responds: 429 Too Many Requests
+# Server responds: 429 Too Many Requests or 503 Service Unavailable
 # Headers: Retry-After: 60
-# Client waits 60 seconds before retry
+# Client waits 60 seconds before retry instead of using exponential backoff
 response = await client.get("/rate-limited-endpoint")
 ```
 
