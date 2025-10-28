@@ -70,7 +70,6 @@ def _calculate_backoff_for_response(status_code: int, headers, attempt: int) -> 
 
     return _calculate_backoff(attempt)
 
-
 class ProductionHTTPClient:
     def __init__(
         self,
@@ -139,23 +138,13 @@ class ProductionHTTPClient:
 
                 return response
 
-            except httpx.TimeoutException as e:
+            except (httpx.TimeoutException, httpx.NetworkError) as e:
                 last_exception = e
+                error_type = "Timeout" if isinstance(e, httpx.TimeoutException) else "Network error"
                 if attempt < self.max_attempts - 1:
                     backoff = _calculate_backoff(attempt)
                     logger.warning(
-                        f"Timeout on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
-                    )
-                    time.sleep(backoff)
-                else:
-                    raise
-
-            except httpx.NetworkError as e:
-                last_exception = e
-                if attempt < self.max_attempts - 1:
-                    backoff = _calculate_backoff(attempt)
-                    logger.warning(
-                        f"Network error on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
+                        f"{error_type} on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
                     )
                     time.sleep(backoff)
                 else:
@@ -252,23 +241,13 @@ class AsyncProductionHTTPClient:
 
                 return response
 
-            except httpx.TimeoutException as e:
+            except (httpx.TimeoutException, httpx.NetworkError) as e:
                 last_exception = e
+                error_type = "Timeout" if isinstance(e, httpx.TimeoutException) else "Network error"
                 if attempt < self.max_attempts - 1:
                     backoff = _calculate_backoff(attempt)
                     logger.warning(
-                        f"Timeout on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
-                    )
-                    await asyncio.sleep(backoff)
-                else:
-                    raise
-
-            except httpx.NetworkError as e:
-                last_exception = e
-                if attempt < self.max_attempts - 1:
-                    backoff = _calculate_backoff(attempt)
-                    logger.warning(
-                        f"Network error on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
+                        f"{error_type} on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
                     )
                     await asyncio.sleep(backoff)
                 else:
