@@ -184,17 +184,6 @@ response = await client.get("/api/data")
 - A 500 response might mean "the server received your data but crashed before responding"
 - Retrying could cause the same data to be processed **twice**
 
-**Example:**
-```python
-# ❌ BAD: This could create duplicate payments
-response = await client.post("/payment", json={"amount": 100})
-# If server returns 500 after processing the payment, retrying creates duplicate!
-
-# ✅ GOOD: POST is never retried
-response = await client.post("/payment", json={"amount": 100})
-# Returns immediately with error - no risk of duplicate processing
-```
-
 **Other methods ARE retried** because they're idempotent:
 - **GET**: Safe to retry - just reading data
 - **PUT**: Idempotent - same request twice = same result
