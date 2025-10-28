@@ -64,11 +64,11 @@ with ProductionHTTPClient(base_url="https://api.example.com") as client:
 - `429` Too Many Requests (respects `Retry-After` header)
 - `500` Internal Server Error
 - `502` Bad Gateway
-- `503` Service Unavailable
+- `503` Service Unavailable (respects `Retry-After` header)
 - `504` Gateway Timeout
-- `104` Connection Reset
 - `408` Request Timeout
-- Network errors, timeouts
+- `104` Connection Reset
+- Network errors, timeouts, connection errors
 
 **Never retries:**
 - `4xx` client errors (except 429, 408, 104)
@@ -165,15 +165,37 @@ async with AsyncProductionHTTPClient() as client:
 
 ### Retry Logic
 
-Only retries **transient errors** that might succeed on retry:
+The client implements comprehensive retry logic for both HTTP status codes and network exceptions:
 
-```python
-# Will retry on 500, 502, 503, 504, 408, 429
-response = await client.get("/api/data")
+#### HTTP Status Code Retries
+Retries on transient server errors and rate limiting:
+- `429` Too Many Requests (respects `Retry-After` header)
+- `500` Internal Server Error
+- `502` Bad Gateway  
+- `503` Service Unavailable (respects `Retry-After` header)
+- `504` Gateway Timeout
+- `408` Request Timeout
+- `104` Connection Reset
 
-# Will NOT retry on 400, 401, 403, 404, etc.
-# These fail immediately to avoid wasting time
-```
+#### Exception Retries
+Retries on all httpx network-related exceptions:
+- **TimeoutException**: Request timed out
+- **NetworkError**: General network connectivity issues  
+- **ConnectError**: Failed to establish connection
+- **ConnectTimeout**: Connection establishment timed out
+- **ReadTimeout**: Reading response timed out
+- **PoolTimeout**: Connection pool exhausted
+- **LocalProtocolError**: Local protocol violations
+
+#### What's Never Retried
+- `4xx` client errors (except 429, 408, 104)
+- Success responses (2xx)
+- POST requests (not idempotent)
+
+All retries use exponential backoff with jitter to prevent thundering herd problems.
+
+#### Scalable Design
+The retry logic is designed to be easily extensible. New HTTP status codes or httpx exceptions can be added to the `RETRIABLE_STATUS_CODES` and `HTTPX_EXCEPTIONS` dictionaries respectively, making the retry behavior configurable without code changes.
 
 ### Why POST Requests Are Not Retried
 

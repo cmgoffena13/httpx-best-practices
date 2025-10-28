@@ -32,6 +32,16 @@ RETRIABLE_STATUS_CODES = {
     504: "Gateway Timeout",
 }
 
+HTTPX_EXCEPTIONS = {
+    httpx.TimeoutException: "Timeout",
+    httpx.NetworkError: "Network error",
+    httpx.ConnectError: "Connection error",
+    httpx.ConnectTimeout: "Connection timeout",
+    httpx.ReadTimeout: "Read timeout",
+    httpx.PoolTimeout: "Pool timeout",
+    httpx.LocalProtocolError: "Local protocol error",
+}
+
 
 def _parse_retry_after(retry_after_header: Optional[str]) -> Optional[float]:
     """Parse the Retry-After header value."""
@@ -138,13 +148,13 @@ class ProductionHTTPClient:
 
                 return response
 
-            except (httpx.TimeoutException, httpx.NetworkError) as e:
+            except tuple(HTTPX_EXCEPTIONS.keys()) as e:
                 last_exception = e
-                error_type = "Timeout" if isinstance(e, httpx.TimeoutException) else "Network error"
+                error_desc = HTTPX_EXCEPTIONS[type(e)]
                 if attempt < self.max_attempts - 1:
                     backoff = _calculate_backoff(attempt)
                     logger.warning(
-                        f"{error_type} on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
+                        f"{error_desc} on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
                     )
                     time.sleep(backoff)
                 else:
@@ -241,13 +251,13 @@ class AsyncProductionHTTPClient:
 
                 return response
 
-            except (httpx.TimeoutException, httpx.NetworkError) as e:
+            except tuple(HTTPX_EXCEPTIONS.keys()) as e:
                 last_exception = e
-                error_type = "Timeout" if isinstance(e, httpx.TimeoutException) else "Network error"
+                error_desc = HTTPX_EXCEPTIONS[type(e)]
                 if attempt < self.max_attempts - 1:
                     backoff = _calculate_backoff(attempt)
                     logger.warning(
-                        f"{error_type} on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
+                        f"{error_desc} on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
                     )
                     await asyncio.sleep(backoff)
                 else:
