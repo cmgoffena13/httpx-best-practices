@@ -170,8 +170,8 @@ class SyncProductionHTTPClient:
         return self.request_with_retry("GET", url, **kwargs)
 
     def post(self, url: str, **kwargs) -> httpx.Response:
-        """POST request with retry logic."""
-        return self.request_with_retry("POST", url, **kwargs)
+        """POST request without retry logic (POST is not idempotent)."""
+        return self.client.request("POST", url, **kwargs)
 
     def put(self, url: str, **kwargs) -> httpx.Response:
         """PUT request with retry logic."""
@@ -297,8 +297,8 @@ class AsyncProductionHTTPClient:
         return await self.request_with_retry("GET", url, **kwargs)
 
     async def post(self, url: str, **kwargs) -> httpx.Response:
-        """POST request with retry logic."""
-        return await self.request_with_retry("POST", url, **kwargs)
+        """POST request without retry logic (POST is not idempotent)."""
+        return await self.client.request("POST", url, **kwargs)
 
     async def put(self, url: str, **kwargs) -> httpx.Response:
         """PUT request with retry logic."""

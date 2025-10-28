@@ -168,12 +168,37 @@ async with AsyncProductionHTTPClient() as client:
 Only retries **transient errors** that might succeed on retry:
 
 ```python
-# Will retry on 500, 502, 503, 504
+# Will retry on 500, 502, 503, 504, 408, 429
 response = await client.get("/api/data")
 
 # Will NOT retry on 400, 401, 403, 404, etc.
 # These fail immediately to avoid wasting time
 ```
+
+### Why POST Requests Are Not Retried
+
+**POST requests are never automatically retried** to prevent duplicate side effects. Here's why:
+
+**The Problem with Retrying POST:**
+- POST is **not idempotent** - sending the same request multiple times can cause different effects
+- A 500 response might mean "the server received your data but crashed before responding"
+- Retrying could cause the same data to be processed **twice**
+
+**Example:**
+```python
+# ❌ BAD: This could create duplicate payments
+response = await client.post("/payment", json={"amount": 100})
+# If server returns 500 after processing the payment, retrying creates duplicate!
+
+# ✅ GOOD: POST is never retried
+response = await client.post("/payment", json={"amount": 100})
+# Returns immediately with error - no risk of duplicate processing
+```
+
+**Other methods ARE retried** because they're idempotent:
+- **GET**: Safe to retry - just reading data
+- **PUT**: Idempotent - same request twice = same result
+- **DELETE**: Idempotent - deleting already deleted is fine
 
 ### Exponential Backoff + Jitter
 
