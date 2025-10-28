@@ -61,37 +61,14 @@ def _calculate_backoff(attempt: int) -> float:
     return random.uniform(0.8, 1.0) * (2**attempt)
 
 
-def _get_retry_backoff(
-    status_code: int,
-    headers,
-    attempt: int,
-    max_retries: int,
-    error_desc: str,
-    method: str,
-    url: str,
-) -> float:
-    """Calculate backoff delay and log the retry message."""
-    backoff = None
-    retry_message = None
-
+def _calculate_backoff_for_response(status_code: int, headers, attempt: int) -> float:
+    """Calculate backoff delay for a response with retry logic."""
     if status_code == 429:
         retry_after = _parse_retry_after(headers.get("Retry-After"))
         if retry_after is not None:
-            backoff = retry_after
-            retry_message = f"retrying after {backoff:.2f}s (as specified by Retry-After header, attempt {attempt + 1}/{max_retries})"
-        else:
-            backoff = _calculate_backoff(attempt)
-            retry_message = (
-                f"retrying in {backoff:.2f}s (attempt {attempt + 1}/{max_retries})"
-            )
-    else:
-        backoff = _calculate_backoff(attempt)
-        retry_message = (
-            f"retrying in {backoff:.2f}s (attempt {attempt + 1}/{max_retries})"
-        )
+            return retry_after
 
-    logger.warning(f"{error_desc} on {method} {url}, {retry_message}")
-    return backoff
+    return _calculate_backoff(attempt)
 
 
 class SyncProductionHTTPClient:
@@ -99,7 +76,7 @@ class SyncProductionHTTPClient:
         self,
         base_url: Optional[str] = None,
         request_timeout: float = 10.0,
-        max_retries: int = 4, # 4 retries = 5 attempts
+        max_retries: int = 4,  # 4 retries = 5 attempts
         default_headers: Optional[dict] = None,
     ):
         self.base_url = base_url
@@ -146,14 +123,11 @@ class SyncProductionHTTPClient:
                 if response.status_code in RETRIABLE_STATUS_CODES:
                     if attempt < self.max_retries:
                         error_desc = RETRIABLE_STATUS_CODES[response.status_code]
-                        backoff = _get_retry_backoff(
-                            response.status_code,
-                            response.headers,
-                            attempt,
-                            self.max_retries,
-                            error_desc,
-                            method,
-                            url,
+                        backoff = _calculate_backoff_for_response(
+                            response.status_code, response.headers, attempt
+                        )
+                        logger.warning(
+                            f"{error_desc} on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_retries})"
                         )
                         time.sleep(backoff)
                         continue
@@ -213,7 +187,7 @@ class AsyncProductionHTTPClient:
         self,
         base_url: Optional[str] = None,
         request_timeout: float = 10.0,
-        max_retries: int = 4, # 4 retries = 5 attempts
+        max_retries: int = 4,  # 4 retries = 5 attempts
         default_headers: Optional[dict] = None,
     ):
         self.base_url = base_url
@@ -276,14 +250,11 @@ class AsyncProductionHTTPClient:
                 if response.status_code in RETRIABLE_STATUS_CODES:
                     if attempt < self.max_retries:
                         error_desc = RETRIABLE_STATUS_CODES[response.status_code]
-                        backoff = _get_retry_backoff(
-                            response.status_code,
-                            response.headers,
-                            attempt,
-                            self.max_retries,
-                            error_desc,
-                            method,
-                            url,
+                        backoff = _calculate_backoff_for_response(
+                            response.status_code, response.headers, attempt
+                        )
+                        logger.warning(
+                            f"{error_desc} on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_retries})"
                         )
                         await asyncio.sleep(backoff)
                         continue

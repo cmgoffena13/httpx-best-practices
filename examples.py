@@ -124,6 +124,5 @@ def sync_examples():
         api_client.close()
 
 
-
 asyncio.run(async_examples())
 sync_examples()
