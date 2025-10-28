@@ -1,8 +1,8 @@
-from client import AsyncProductionHTTPClient, SyncProductionHTTPClient
+from client import AsyncProductionHTTPClient, ProductionHTTPClient
 import logging
 import asyncio
 
-logging.basicConfig(level=logging.INFO)
+
 logger = logging.getLogger(__name__)
 
 
@@ -66,11 +66,11 @@ async def async_examples():
 
 
 def sync_examples():
-    """Sync examples using SyncProductionHTTPClient."""
+    """Sync examples using ProductionHTTPClient."""
 
     # Example 1: Context manager
     logger.info("\n=== Sync Example 1: Context Manager ===")
-    with SyncProductionHTTPClient(
+    with ProductionHTTPClient(
         base_url="https://jsonplaceholder.typicode.com"
     ) as client:
         response = client.get("/posts/1")
@@ -78,7 +78,7 @@ def sync_examples():
 
     # Example 2: Manual lifecycle
     logger.info("\n=== Sync Example 2: Manual lifecycle ===")
-    client = SyncProductionHTTPClient(base_url="https://jsonplaceholder.typicode.com")
+    client = ProductionHTTPClient(base_url="https://jsonplaceholder.typicode.com")
     try:
         response = client.get("/posts/2")
         logger.info(f"Status: {response.status_code}, Data: {response.json()}")
@@ -92,7 +92,7 @@ def sync_examples():
         """Example sync API client."""
 
         def __init__(self):
-            self.client = SyncProductionHTTPClient(
+            self.client = ProductionHTTPClient(
                 base_url="https://jsonplaceholder.typicode.com",
                 request_timeout=10.0,
                 max_attempts=4,

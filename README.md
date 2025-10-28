@@ -40,9 +40,9 @@ finally:
 ### Sync Example
 
 ```python
-from client import SyncProductionHTTPClient
+from client import ProductionHTTPClient
 
-with SyncProductionHTTPClient(base_url="https://api.example.com") as client:
+with ProductionHTTPClient(base_url="https://api.example.com") as client:
     response = client.get("/users/1")
     data = response.json()
 ```
@@ -239,7 +239,7 @@ response = await client.get("/rate-limited-endpoint")
 
 ## When to Use Sync vs Async
 
-**Use `SyncProductionHTTPClient` when:**
+**Use `ProductionHTTPClient` when:**
 - Writing synchronous code (scripts, CLI tools, simple backends)
 - You need simple blocking behavior
 

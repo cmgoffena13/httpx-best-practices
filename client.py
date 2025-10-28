@@ -8,7 +8,7 @@ This module provides production-ready HTTP clients with:
 - Retry-After header support for rate limiting (429) and service unavailable (503)
 - Configurable timeouts and retry limits
 - Comprehensive error handling and logging
-- Both sync (SyncProductionHTTPClient) and async (AsyncProductionHTTPClient) variants
+- Both sync (ProductionHTTPClient) and async (AsyncProductionHTTPClient) variants
 """
 
 import asyncio
@@ -71,7 +71,7 @@ def _calculate_backoff_for_response(status_code: int, headers, attempt: int) -> 
     return _calculate_backoff(attempt)
 
 
-class SyncProductionHTTPClient:
+class ProductionHTTPClient:
     def __init__(
         self,
         base_url: Optional[str] = None,
