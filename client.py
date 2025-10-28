@@ -46,7 +46,11 @@ def _parse_retry_after(retry_after_header: Optional[str]) -> Optional[float]:
         try:
             retry_date = pendulum.parse(retry_after_header.strip())
             now = pendulum.now()
-            return max(0, (retry_date - now).total_seconds())
+            seconds = (retry_date - now).total_seconds()
+            # If date is in the past or invalid, fall back to None
+            if seconds <= 0:
+                return None
+            return seconds
         except Exception:
             logger.warning(f"Could not parse Retry-After header: {retry_after_header}")
             return None
