@@ -197,7 +197,6 @@ Prevents all clients from retrying at the same time:
 Client 1: retries at 0.85s, 1.7s, 3.5s
 Client 2: retries at 0.92s, 1.9s, 3.8s
 Client 3: retries at 0.88s, 1.6s, 3.3s
-# Tighter jitter, closer to exponential value
 ```
 
 ### Retry-After Support
