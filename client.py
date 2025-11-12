@@ -42,6 +42,7 @@ HTTPX_EXCEPTIONS = {
     httpx.LocalProtocolError: "Local protocol error",
 }
 
+HTTPX_EXCEPTIONS_KEYS = tuple(HTTPX_EXCEPTIONS.keys())
 
 def _parse_retry_after(retry_after_header: Optional[str]) -> Optional[float]:
     """Parse the Retry-After header value."""
@@ -70,7 +71,7 @@ def _calculate_backoff(attempt: int) -> float:
     return random.uniform(0.8, 1.0) * (2**attempt)
 
 
-def _calculate_backoff_for_response(status_code: int, headers, attempt: int) -> float:
+def _calculate_backoff_for_response(status_code: int, headers: httpx.Headers, attempt: int) -> float:
     """Calculate backoff delay for a response with retry logic."""
     # Respect Retry-After header for 429 (rate limiting) and 503 (service unavailable)
     if status_code in (429, 503):
@@ -157,7 +158,7 @@ class ProductionHTTPClient:
 
                 return response
 
-            except tuple(HTTPX_EXCEPTIONS.keys()) as e:
+            except HTTPX_EXCEPTIONS_KEYS as e:
                 last_exception = e
                 error_desc = HTTPX_EXCEPTIONS[type(e)]
                 if attempt < self.max_attempts - 1:
@@ -268,7 +269,7 @@ class AsyncProductionHTTPClient:
 
                 return response
 
-            except tuple(HTTPX_EXCEPTIONS.keys()) as e:
+            except HTTPX_EXCEPTIONS_KEYS as e:
                 last_exception = e
                 error_desc = HTTPX_EXCEPTIONS[type(e)]
                 if attempt < self.max_attempts - 1:
