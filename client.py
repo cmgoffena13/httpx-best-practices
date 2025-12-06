@@ -44,6 +44,7 @@ HTTPX_EXCEPTIONS = {
 
 HTTPX_EXCEPTIONS_KEYS = tuple(HTTPX_EXCEPTIONS.keys())
 
+
 def _parse_retry_after(retry_after_header: Optional[str]) -> Optional[float]:
     """Parse the Retry-After header value."""
     if not retry_after_header:
@@ -71,7 +72,9 @@ def _calculate_backoff(attempt: int) -> float:
     return random.uniform(0.8, 1.0) * (2**attempt)
 
 
-def _calculate_backoff_for_response(status_code: int, headers: httpx.Headers, attempt: int) -> float:
+def _calculate_backoff_for_response(
+    status_code: int, headers: httpx.Headers, attempt: int
+) -> float:
     """Calculate backoff delay for a response with retry logic."""
     # Respect Retry-After header for 429 (rate limiting) and 503 (service unavailable)
     if status_code in (429, 503):
@@ -107,17 +110,20 @@ class ProductionHTTPClient:
             pool=pool_timeout,  # Max seconds to wait when trying to acquire a connection from the pool
         )
 
-        self.client = httpx.Client(
-            base_url=base_url,
-            timeout=httpx_timeout,
-            headers=default_headers,
-            limits=httpx.Limits(
-                max_keepalive_connections=max_keepalive_connections,
-                max_connections=max_connections,
-                keepalive_expiry=keepalive_expiry,
+        client_kwargs = {
+            "timeout": httpx_timeout,
+            "headers": default_headers,
+            "limits": httpx.Limits(
+                max_keepalive_connections=max_keepalive_connections,  # Keep connections alive
+                max_connections=max_connections,  # Max total connections
+                keepalive_expiry=keepalive_expiry,  # Keep connections for keepalive_expiry seconds
             ),
-            http2=True,
-        )
+            "http2": True,  # Enable HTTP/2 for better connection reuse
+        }
+        if base_url is not None:
+            client_kwargs["base_url"] = base_url
+
+        self.client = httpx.Client(**client_kwargs)
 
     def close(self):
         """Clean up the client and close all connections."""
@@ -216,17 +222,20 @@ class AsyncProductionHTTPClient:
             pool=pool_timeout,  # Max seconds to wait when trying to acquire a connection from the pool
         )
 
-        self.client = httpx.AsyncClient(
-            base_url=base_url,
-            timeout=httpx_timeout,
-            headers=default_headers,
-            limits=httpx.Limits(
-                max_keepalive_connections=20,  # Keep connections alive
-                max_connections=50,  # Max total connections
-                keepalive_expiry=30.0,  # Keep connections for 30s
+        client_kwargs = {
+            "timeout": httpx_timeout,
+            "headers": default_headers,
+            "limits": httpx.Limits(
+                max_keepalive_connections=max_keepalive_connections,  # Keep connections alive
+                max_connections=max_connections,  # Max total connections
+                keepalive_expiry=keepalive_expiry,  # Keep connections for keepalive_expiry seconds
             ),
-            http2=True,  # Enable HTTP/2 for better connection reuse
-        )
+            "http2": True,  # Enable HTTP/2 for better connection reuse
+        }
+        if base_url is not None:
+            client_kwargs["base_url"] = base_url
+
+        self.client = httpx.AsyncClient(**client_kwargs)
 
     async def close(self):
         """Clean up the client and close all connections."""
